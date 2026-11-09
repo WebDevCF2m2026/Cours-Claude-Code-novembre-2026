@@ -76,6 +76,16 @@ cd mon-projet-symfony
 claude
 ```
 
+ou
+
+```bash
+sudo apt install -y nodejs
+npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code
+claude
+```
+
+N'oubliez pas de mettre claude à jour avec `claude update`
+
 L'installation native se met à jour seule en arrière-plan. Il existe aussi Homebrew (`brew install --cask claude-code`), WinGet, et des paquets apt, dnf ou apk pour Debian, Fedora, RHEL et Alpine.
 
 ### Sur un VPS Linux
