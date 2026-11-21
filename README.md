@@ -1,6 +1,6 @@
 # Cours : comprendre et maîtriser Claude Code
 
-Nov 7, 2026 · @Michaël Pitz
+Nov 7, 2026 · @Michaël Pitz — mis à jour le 21 novembre 2026 (Claude Code 2.1.330, voir le module 11)
 
 ## Module 1 — Qu'est-ce que Claude Code ?
 
@@ -214,7 +214,9 @@ Placez toujours le `*` après la sous-commande : `Bash(git log *)` autorise seul
 
 - Une règle Bash compare le texte de la commande. `Bash(rm *)` ne bloque pas `/bin/rm` ni `sh -c 'rm …'` : ce n'est pas une frontière de sécurité absolue.
 - Un `deny` sur `Read(./.env)` ne bloque pas un script PHP que Claude lancerait et qui lirait ce fichier lui-même.
-- Pour une isolation réelle, activez le sandboxing (isolation du système de fichiers et du réseau au niveau OS) ou travaillez dans un conteneur.
+- Pour une isolation réelle, activez le sandboxing (isolation du système de fichiers et du réseau au niveau OS) ou travaillez dans un conteneur. Depuis la version 2.1.325, les commandes exécutées dans la sandbox suivent les permissions normales et peuvent donc demander votre accord ; `"sandbox": {"autoAllowBashIfSandboxed": true}` rétablit l'exécution sans demande.
+- Certaines commandes demandent désormais une confirmation même si une règle semble les couvrir : `rm` visant la racine, le dossier personnel ou le dossier de travail, certains `cp` et `mv`, et les commandes Git de lecture lancées dans un dépôt qui n'est ni le projet ni un dossier approuvé (ajoutez-le avec `--add-dir`).
+- En mode `auto`, les règles `allow` trop larges (par exemple `Bash(pnpm dlx *)` ou un joker sans nom de programme) sont ignorées : le classifieur de sécurité décide lui-même.
 
 ### Checklist sécurité pour un VPS
 
@@ -241,7 +243,7 @@ Analogie Symfony : ce sont les commandes `bin/console` de l'agent. Les intégré
 | `/context` | Montre ce qui occupe la fenêtre de contexte |
 | `/memory` | Ouvre les fichiers CLAUDE.md et l'auto memory |
 | `/permissions` | Gère les règles allow / ask / deny |
-| `/model` | Change de modèle (Opus, Sonnet, Haiku…) |
+| `/model` | Change de modèle (Fable, Opus, Sonnet, Haiku…) |
 | `/agents` | Crée et gère les sous-agents |
 | `/mcp` | Gère les serveurs MCP connectés |
 | `/hooks` | Gère les hooks |
@@ -251,7 +253,11 @@ Analogie Symfony : ce sont les commandes `bin/console` de l'agent. Les intégré
 | `/rewind` | Revient en arrière (code et conversation) à un point précédent |
 | `/usage` | Consommation de votre forfait |
 | `/doctor` | Vérifie l'installation et la configuration |
-| `/code-review` | Relecture du code par Claude (skill fourni) |
+| `/status` | État de la session ; liste aussi les agents, skills et commandes mal formés, les règles de permission ignorées et les hooks dont le matcher ne correspond jamais |
+| `/tasks` | Tâches en arrière-plan : shells, sous-agents, tâches planifiées, réveils de `/loop` |
+| `/loop` | Relance une commande ou un prompt à intervalle régulier (jusqu'à 30 jours tant que la session tourne) |
+| `/code-review` | Relecture par Claude, centrée sur les bugs et le non-respect du CLAUDE.md ; chaque point est classé Important, Pre-existing ou Nit. Sans cible, relit toute la branche par rapport à la branche par défaut |
+| `/simplify` | Nettoyage du code modifié : réutilisation, simplification, efficacité |
 
 ### Raccourcis utiles
 
@@ -381,7 +387,9 @@ Exemple : formater automatiquement chaque fichier PHP modifié, dans `.claude/se
 }
 ```
 
-Un hook `PreToolUse` qui sort avec le code 2 bloque l'action : c'est la bonne façon d'interdire réellement l'écriture dans `config/secrets/`. Un hook `Stop` peut refuser que Claude s'arrête tant que `bin/phpunit` échoue. Méfiance : un hook tourne avec vos droits, relisez ceux des dépôts tiers.
+Un hook `PreToolUse` qui sort avec le code 2 bloque l'action : c'est la bonne façon d'interdire réellement l'écriture dans `config/secrets/`. Un hook `Stop` peut refuser que Claude s'arrête tant que `bin/phpunit` échoue. Méfiance : un hook tourne avec vos droits, relisez ceux des dépôts tiers. Depuis la version 2.1.329, la fenêtre de confiance d'un dossier indique dans quel fichier ses hooks sont déclarés.
+
+Un hook qui renvoie `"decision": "block"` bloque désormais dans plus de cas : un hook qui l'affiche systématiquement peut se mettre à bloquer des actions. Le champ `model` d'un hook de type `prompt` accepte les alias `haiku` ou `sonnet`.
 
 ### Serveurs MCP
 
@@ -392,11 +400,11 @@ claude mcp add --transport http github https://api.githubcopilot.com/mcp/
 claude mcp list
 ```
 
-Un fichier `.mcp.json` à la racine partage les serveurs du projet avec l'équipe. Côté sécurité, branchez une base en lecture seule avec un utilisateur dédié, jamais l'utilisateur de production.
+Un fichier `.mcp.json` à la racine partage les serveurs du projet avec l'équipe. Côté sécurité, branchez une base en lecture seule avec un utilisateur dédié, jamais l'utilisateur de production. Pour ne pas laisser un jeton dans l'historique du shell, `claude mcp add-json <nom> -` lit la configuration JSON du serveur sur l'entrée standard.
 
 ### Plugins
 
-Un plugin regroupe skills, sous-agents, hooks et serveurs MCP dans un paquet installable : `/plugin` pour parcourir les marketplaces, installer, activer ou désactiver. C'est la façon la plus simple de distribuer la même configuration à toute une équipe ou à une promotion d'apprenants.
+Un plugin regroupe skills, sous-agents, hooks et serveurs MCP dans un paquet installable : `/plugin` pour parcourir les marketplaces, installer, activer ou désactiver. C'est la façon la plus simple de distribuer la même configuration à toute une équipe ou à une promotion d'apprenants. Un plugin peut déclarer les versions de Claude Code qu'il supporte (`engines["claude-code"]` dans `plugin.json`), et `claude plugin validate` vérifie un plugin avant de le publier.
 
 Ordre conseillé pour bâtir sa configuration : CLAUDE.md d'abord, puis un skill quand une procédure revient, un sous-agent quand une tâche encombre le contexte, un hook quand une règle doit être garantie, MCP quand il faut sortir du dépôt.
 
@@ -448,6 +456,39 @@ Avec un abonnement (Pro, Max, Team, Enterprise), l'usage est inclus dans des lim
 - Pour des règles qu'aucun membre ne peut contourner, utilisez les paramètres gérés (managed settings) de l'organisation, par exemple `/etc/claude-code/managed-settings.json` sur Linux.
 - Pour des apprenants : commencez en mode Manual, puis plan, et n'introduisez `acceptEdits` qu'une fois la relecture de diff acquise. L'objectif pédagogique reste de comprendre le code produit, pas seulement de l'obtenir.
 - Formalisez une checklist de relecture humaine : sécurité, tests, cohérence avec l'architecture.
+
+## Module 11 — Quoi de neuf du 7 au 21 novembre 2026
+
+Dix versions sont sorties sur cette période, de 2.1.321 (9 novembre) à 2.1.330 (20 novembre). Les points utiles pour ce cours sont intégrés dans les modules ci-dessus ; en voici le récapitulatif. La liste complète figure dans le [changelog officiel](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
+
+### Ajouts
+
+| Version | Nouveauté |
+| --- | --- |
+| 2.1.321 | Modèle **Claude Fable 5.2** (`claude-fable-5-2`), nouveau modèle Fable par défaut, avec une fenêtre de contexte d'un million de tokens |
+| 2.1.323 | **Code Mode** (expérimental, à activer soi-même) : Claude écrit du JavaScript pour appeler ses outils ([doc](https://code.claude.com/docs/en/code-mode)) |
+| 2.1.326 | `Ctrl+O` affiche les messages de démarrage masqués |
+| 2.1.327 | `/status` liste les fichiers d'agents, skills et commandes cassés, les règles de permission ignorées et les hooks qui ne se déclenchent jamais |
+| 2.1.327 | `claude mcp add-json <nom> -` : configuration d'un serveur MCP lue sur l'entrée standard |
+| 2.1.329 | La fenêtre de confiance d'un dossier indique où ses hooks sont déclarés ; `/tasks` regroupe aussi les tâches planifiées et les réveils de `/loop` |
+| 2.1.330 | Lien de connexion beaucoup plus court pour `/login` et `claude auth login` ; recherche améliorée dans `/config` |
+
+### Changements de comportement
+
+- **Permissions plus strictes** (2.1.323 à 2.1.330) : davantage de `rm`, `cp`, `mv` et de commandes PowerShell demandent une confirmation. Les fichiers de connexion de Claude Code (`.credentials.json`) sont protégés en écriture. Les commandes Git de lecture demandent un accord hors du projet et des dossiers approuvés.
+- **Sandbox** (2.1.325) : les commandes exécutées dans la sandbox ne passent plus sans demande par défaut (`sandbox.autoAllowBashIfSandboxed` pour revenir à l'ancien comportement).
+- **Mode auto** : il ignore les règles `allow` trop larges, et le recours payant au classifieur sera supprimé dans une prochaine version ; les actions concernées seront alors soumises à confirmation ou refusées.
+- **`/code-review`** (2.1.328-2.1.329) : se concentre sur les bugs et le non-respect du CLAUDE.md, classe chaque point et relit toute la branche par défaut. Les nettoyages de code passent par `/simplify`.
+- **`/loop` et tâches planifiées** (2.1.330) : elles tournent jusqu'à 30 jours au lieu de 7 tant que la session reste ouverte. Les tâches planifiées enregistrées avec une ancienne version doivent souvent être replanifiées (2.1.329).
+- **Hooks** : `"decision": "block"` bloque dans plus de cas (2.1.326) ; les hooks `prompt` acceptent les alias de modèle (2.1.330).
+- **Contexte** (2.1.323) : un identifiant de modèle inconnu de Claude Code est supposé avoir une fenêtre d'un million de tokens au lieu de 200 000 ; `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` garde 200 000.
+- **Thème** (2.1.326) : la première installation présélectionne le thème « Auto (match terminal) ».
+
+### Suppressions et dépréciations
+
+- Le réglage `subagentStatusLine` est supprimé (2.1.323) : les lignes des sous-agents utilisent toujours l'affichage par défaut.
+- Le réglage `agent` d'un plugin est déprécié (2.1.323) : il fonctionne encore, mais affiche un avertissement.
+- Les dossiers `.claude/skills` situés dans `~/.claude/plugins` ne sont plus chargés automatiquement (2.1.321).
 
 ## Ressources
 

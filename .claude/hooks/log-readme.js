@@ -32,19 +32,22 @@ process.stdin.on("end", () => {
   const outDir = path.join(root, "documentation-dev");
   fs.mkdirSync(outDir, { recursive: true });
 
-  const md = [
-    `# Mise à jour du README.md — ${stamp}`,
-    "",
-    `- **Date** : ${d.toLocaleString("fr-BE")}`,
-    `- **Outil** : ${data.tool_name}`,
-    "",
-    "## Modifications",
-    "",
-    "```diff",
-    diff.trim(),
-    "```",
-    "",
-  ].join("\n");
-  fs.writeFileSync(path.join(outDir, `${stamp}-Update-README.md`), md);
+  const block = ["```diff", diff.trim(), "```", ""].join("\n");
+  const outFile = path.join(outDir, `${stamp}-Update-README.md`);
+  if (fs.existsSync(outFile)) {
+    // Plusieurs modifications dans la même seconde : on complète la fiche au lieu de l'écraser.
+    fs.appendFileSync(outFile, "\n" + block);
+  } else {
+    const header = [
+      `# Mise à jour du README.md — ${stamp}`,
+      "",
+      `- **Date** : ${d.toLocaleString("fr-BE")}`,
+      `- **Outil** : ${data.tool_name}`,
+      "",
+      "## Modifications",
+      "",
+    ].join("\n");
+    fs.writeFileSync(outFile, header + block);
+  }
   fs.copyFileSync(readme, snapshot);
 });
