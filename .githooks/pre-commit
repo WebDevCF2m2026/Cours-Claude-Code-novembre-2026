@@ -1,0 +1,19 @@
+#!/bin/sh
+# Hook git pre-commit : si README.md fait partie du commit, crée la fiche
+# documentation-dev/YYYY-MM-DD-HH-II-SS-Update-README.md (même script que le hook Claude Code)
+# et l'ajoute au commit, avec les fiches déjà générées par Claude et pas encore commitées.
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+git diff --cached --name-only | grep -qx "README.md" || exit 0
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit : node introuvable, fiche README non générée." >&2
+  exit 0
+fi
+
+CLAUDE_PROJECT_DIR="$ROOT" node -e 'console.log(JSON.stringify({tool_name:"git pre-commit",tool_input:{file_path:process.argv[1]+"/README.md"}}))' "$ROOT" \
+  | CLAUDE_PROJECT_DIR="$ROOT" node "$ROOT/.claude/hooks/log-readme.js"
+
+git add -- "$ROOT"/documentation-dev/*-Update-README.md 2>/dev/null
+exit 0
