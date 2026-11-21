@@ -46,6 +46,7 @@ process.stdin.on("end", () => {
       "",
       "## Modifications",
       "",
+      "",
     ].join("\n");
     fs.writeFileSync(outFile, header + block);
   }

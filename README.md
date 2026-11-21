@@ -1,6 +1,8 @@
 # Cours : comprendre et maîtriser Claude Code
 
-Nov 7, 2026 · @Michaël Pitz — mis à jour le 21 novembre 2026 (Claude Code 2.1.330, voir le module 11)
+Nov 7, 2026 · @Michaël Pitz 
+
+— mis à jour le 21 novembre 2026 (Claude Code 2.1.330, voir le module 11)
 
 ## Module 1 — Qu'est-ce que Claude Code ?
 
