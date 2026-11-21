@@ -1,4 +1,23 @@
 {
+  "permissions": {
+    "deny": [
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git checkout -b *)",
+      "Bash(git checkout -B *)",
+      "Bash(git switch -c *)",
+      "Bash(git switch -C *)",
+      "Bash(git worktree add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git branch *)",
+      "PowerShell(git checkout -b *)",
+      "PowerShell(git checkout -B *)",
+      "PowerShell(git switch -c *)",
+      "PowerShell(git switch -C *)",
+      "PowerShell(git worktree add *)",
+      "EnterWorktree"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
